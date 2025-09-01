@@ -187,7 +187,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#plot-only-the-specific-attribute--" id="toc-plot-only-the-specific-attribute--" class="nav-link" data-scroll-target="#plot-only-the-specific-attribute--">3. Plot only the specific attribute -</a></li>
   <li><a href="#overlaying-layers" id="toc-overlaying-layers" class="nav-link" data-scroll-target="#overlaying-layers">4. Overlaying Layers:</a></li>
   </ul></li>
-  <li><a href="#e.-working-on-projeciton-in-r" id="toc-e.-working-on-projeciton-in-r" class="nav-link" data-scroll-target="#e.-working-on-projeciton-in-r">E. Working on Projeciton in R</a>
+  <li><a href="#e.-working-on-projection-in-r" id="toc-e.-working-on-projection-in-r" class="nav-link" data-scroll-target="#e.-working-on-projection-in-r">E. Working on Projection in R</a>
   <ul class="collapse">
   <li><a href="#checking-the-crs--" id="toc-checking-the-crs--" class="nav-link" data-scroll-target="#checking-the-crs--">1. Checking the CRS -</a></li>
   <li><a href="#assigning-the-correct-epsg-code--" id="toc-assigning-the-correct-epsg-code--" class="nav-link" data-scroll-target="#assigning-the-correct-epsg-code--">2. Assigning the correct EPSG Code -</a></li>
@@ -474,8 +474,8 @@ all</code></pre>
 <p><u><em>Answer : The preschool points didn’t show up on the map because they were using a different coordinate system than the mpsz layer. The mpsz layer uses a local Singapore system measured in meters, while the preschool data (from a KML file) uses a global system measured in degrees. Since R doesn’t automatically adjust for this difference, the preschool points ended up being placed far away from the map area, making them invisible. To fix this, you need to convert the preschool data to match the coordinate system of the mpsz layer.</em></u></p>
 </section>
 </section>
-<section id="e.-working-on-projeciton-in-r" class="level2">
-<h2 class="anchored" data-anchor-id="e.-working-on-projeciton-in-r">E. Working on Projeciton in R</h2>
+<section id="e.-working-on-projection-in-r" class="level2">
+<h2 class="anchored" data-anchor-id="e.-working-on-projection-in-r">E. Working on Projection in R</h2>
 <section id="checking-the-crs--" class="level3">
 <h3 class="anchored" data-anchor-id="checking-the-crs--">1. Checking the CRS -</h3>
 <p>This shows the coordinate reference system (CRS) of the mpsz layer. If the EPSG code is incorrect (e.g., 9001), we need to fix it</p>
