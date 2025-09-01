@@ -1,5 +1,5 @@
 ---
-title: "ISSS626-VAA"
+title: "ISSS626-GSA"
 ---
 
 Welcome to **ISSS626 Geospatial Analytics and Applications**. In this website, you will find my coursework prepared from this course.
