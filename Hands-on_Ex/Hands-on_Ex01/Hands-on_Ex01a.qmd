@@ -1,0 +1,329 @@
+---
+title: "Hands-on Exercise 1"
+author: "Shubham Sinha"
+---
+
+# Getting Started
+
+# Geospatial Data Wrangling with R
+
+## A. Install and launching R packages
+
+The code chunk below uses p_load() of pacman package to check if tidyverse packages are installed in the computer. If they are, then they will be launched into R.
+
+```{r}
+pacman::p_load(sf,tidyverse)
+```
+
+## B. Importing the data
+
+### 1. Listings.csv from Aspatial folder
+
+```{r}
+listings <- read_csv("data/aspatial/listings.csv")
+```
+
+### 2. MP14_Subzone shapefile from Geospatial folder
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial/MasterPlan2014SubzoneBoundaryWebSHP",layer = "MP14_SUBZONE_WEB_PL")
+```
+
+### 3. Cyclingpath shapefile from Geospatial folder
+
+```{r}
+cyclingpath <- st_read(dsn = "data/geospatial/CyclingPath_Apr2025", layer = "CyclingPathGazette")
+```
+
+### 4. PreSchoolLocation kml from Geospatial folder
+
+```{r}
+preschool <- st_read(dsn = "data/geospatial/PreSchoolsLocation.kml")
+```
+
+## C. Checking content of Simple feature Data Frame
+
+### 1. st_geometry() -
+
+Use st_geometry() to extract and inspect the geometry column of the mpsz simple feature data frame.
+
+```{r}
+st_geometry(mpsz)
+```
+
+### 2. glimpse() -
+
+Use glimpse() from the dplyr package to explore the attribute data (non-spatial columns)
+
+```{r}
+glimpse(mpsz)
+```
+
+### 3. head() -
+
+to inspect the first few records in full, including both attributes and geometry.
+
+```{r}
+head(mpsz,n=5)
+```
+
+## D. Plotting the Geospatial Data
+
+### 1. plot() -
+
+This gives a quick overview of how each attribute varies spatially.
+
+```{r}
+plot(mpsz)
+```
+
+### 2. Plot only the geometry -
+
+focus solely on the spatial layout without attribute overlays.
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+### 3. Plot only the specific attribute -
+
+plot the geometry colored by a specific attribute.
+
+```{r}
+plot(mpsz["PLN_AREA_N"])
+```
+
+### 4. Overlaying Layers:
+
+Preschool on Top of Subzones To overlay point features (e.g., preschools) on top of polygon features (e.g., subzones).
+
+```{r}
+plot(st_geometry(mpsz))
+plot(st_geometry(preschool),add = TRUE)
+```
+
+**Quiz - Note that the preschool point objects failed to plot ontop of the mpsz layer. Do you know why?**
+
+[*Answer : The preschool points didn’t show up on the map because they were using a different coordinate system than the mpsz layer. The mpsz layer uses a local Singapore system measured in meters, while the preschool data (from a KML file) uses a global system measured in degrees. Since R doesn’t automatically adjust for this difference, the preschool points ended up being placed far away from the map area, making them invisible. To fix this, you need to convert the preschool data to match the coordinate system of the mpsz layer.*]{.underline}
+
+## E. Working on Projection in R
+
+### 1. Checking the CRS -
+
+This shows the coordinate reference system (CRS) of the mpsz layer. If the EPSG code is incorrect (e.g., 9001), we need to fix it
+
+```{r}
+st_crs(mpsz)
+```
+
+### 2. Assigning the correct EPSG Code -
+
+This sets the CRS of mpsz to SVY21 / Singapore TM (EPSG:3414), which uses meters and is suitable for local mapping and confirm the same.
+
+```{r}
+mpsz <- st_set_crs(mpsz, 3414)
+st_crs(mpsz)
+```
+
+### 3. Transforming -
+
+Transform preschool to match mpsz projections
+
+```{r}
+st_crs(preschool)
+preschool <- st_transform(preschool, crs = 3414)
+st_crs(preschool)
+```
+
+### 4. Plot both layers together
+
+This overlays the preschool points on top of the mpsz map correctly, now that both use the same projection.
+
+```{r}
+plot(st_geometry(mpsz))
+plot(st_geometry(preschool), add = TRUE)
+
+```
+
+## F. Working on Aspatial
+
+### 1. Checking the structure of imported data -
+
+This displays the contents of the listings tibble with columns like latitude, longitude, price, room_type, etc. These coordinates are in decimal degrees, so we assume they use WGS 84 (EPSG:4326).
+
+```{r}
+list(listings)
+```
+
+### 2. Convert the tibble into spatial data frame -
+
+-   Using st_as_sf() turns the tibble into a simple feature (sf) object.
+-   coords = c("longitude", "latitude") tells R which columns to use for spatial coordinates.
+-   crs = 4326 sets the initial CRS to WGS 84.
+-   %\>% st_transform(crs = 3414) reprojects the data to SVY21 / Singapore TM, matching the mpsz layer.
+
+```{r}
+listings_sf=st_as_sf(listings, 
+                         coords = c("longitude", "latitude"), 
+                         crs = 4326) %>%
+   st_transform(crs = 3414)
+```
+
+### 3. Inspect the new spatial dataframe -
+
+```{r}
+glimpse(listings_sf)
+```
+
+### 4. Plot both layers together - DIY
+
+Plotting the airbnb listings on the top of mpsz layer. - plot(st_geometry(mpsz)) draws the base map of Singapore subzones. - plot(..., add = TRUE) overlays the Airbnb points. - col = "blue" and pch = 20 make the points visible and styled.
+
+```{r}
+plot(st_geometry(mpsz))
+plot(st_geometry(listings_sf), add = TRUE, col = "blue", pch = 20)
+```
+
+## G. Geoprocessing with sf Package
+
+### Land Acquisition Analysis
+
+#### 1 : Create a 5-meter buffer around cycling paths
+
+-   st_buffer() creates a buffer zone around each line feature.
+-   dist = 5 means 5 meters on each side.
+-   nQuadSegs = 30 smooths the buffer edges for better visual quality.
+
+```{r}
+buffer_cycling <- st_buffer(cyclingpath, dist = 5, nQuadSegs = 30)
+```
+
+#### 2: Calculate the area of each buffer Base R
+
+```{r}
+buffer_cycling$AREA <- st_area(buffer_cycling)
+```
+
+-   st_area() computes the area of each buffer polygon.
+-   mutate() adds a new column called AREA.
+
+#### 3: Calculate total land area required
+
+```{r}
+sum(buffer_cycling$AREA)
+```
+
+-   This returns the total area of all buffer zones in square meters.
+
+#### 4: Focus on Tampines West subzone
+
+```{r}
+mpsz_selected <- mpsz %>%
+  filter(SUBZONE_N == "TAMPINES WEST")
+```
+
+-   filter() extracts only the polygon for Tampines West.
+
+#### 5: Clip buffer to Tampines West using st_intersection()
+
+```{r}
+buffer_cycling <- st_transform(buffer_cycling, st_crs(mpsz_selected))
+mpsz_selected <- st_transform(mpsz_selected, st_crs(buffer_cycling))
+buffer_cycling_selected <- st_intersection(buffer_cycling, mpsz_selected)
+```
+
+-   st_intersection() returns only the overlapping area between the buffer and the selected subzone.
+
+#### 6: Plot the result
+
+```{r}
+plot(st_geometry(mpsz_selected), col = "lightgrey", main = "Buffer Zone in Tampines West")
+plot(st_geometry(buffer_cycling_selected), col = "red", add = TRUE)
+```
+
+-   This overlays the buffer zone on top of the selected subzone.
+
+### Count Pre-Schools by Subzone
+
+#### 1: Count pre-schools within each subzone
+
+```{r}
+mpsz$`PreSch Count` <- lengths(st_intersects(mpsz, preschool))
+```
+
+-   st_intersects() checks which points fall inside each polygon.
+-   lengths() counts how many pre-schools intersect each subzone.
+
+#### 2: View summary statistics
+
+```{r}
+summary(mpsz$`PreSch Count`)
+```
+
+-   This shows min, max, mean, and quartiles of pre-school counts.
+
+#### 3: Find subzone with the most pre-schools
+
+```{r}
+top_n(mpsz, 1, `PreSch Count`)
+```
+
+-   top_n() returns the subzone with the highest count.
+
+#### 4: Calculate area of each subzone
+
+```{r}
+mpsz$Area <- st_area(mpsz)
+```
+
+-   Adds a new column Area with the size of each subzone in square meters.
+
+#### 5: Compute pre-school density
+
+```{r}
+mpsz <- mpsz %>%
+  mutate(`PreSch Density` = `PreSch Count` / Area * 1e6)
+```
+
+-   Converts count per square meter to count per square kilometer.
+
+#### 6: Visualize Pre-School Density
+
+A. Histogram using base R
+
+```{r}
+hist(mpsz$`PreSch Density`)
+```
+
+-   Quick view of distribution, but limited styling.
+
+B. Histogram using ggplot2
+
+```{r}
+library(ggplot2)
+ggplot(data = mpsz, aes(x = as.numeric(`PreSch Density`))) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  labs(
+    title = "Are pre-schools evenly distributed in Singapore?",
+    subtitle = "Many subzones have only one pre-school, while seven have 30 or more.",
+    x = "Pre-school density (per km²)",
+    y = "Frequency"
+  )
+```
+
+-   A polished histogram with custom labels and colors.
+
+#### 7: Scatterplot of Density vs Count
+
+```{r}
+ggplot(data = mpsz, aes(x = as.numeric(`PreSch Density`), y = `PreSch Count`)) +
+  geom_point(color = "black", fill = "light blue") +
+  xlim(0, 40) +
+  ylim(0, 40) +
+  labs(
+    x = "Pre-school density (per km²)",
+    y = "Pre-school count"
+  )
+```
+
+-   Shows the relationship between density and total count per subzone.
