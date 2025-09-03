@@ -1,0 +1,166 @@
+---
+title: "Hands-on Exercise 2"
+author: "Shubham Sinha"
+---
+
+# First-order Spatial Point Patterns Analysis Methods
+
+## 1.Overview 
+
+First-order Spatial Point Pattern Analysis (1st-SPPA) is a method used to study the spatial distribution and density of point-based phenomena—such as crime events, business locations, or public facilities—across a geographic area. Unlike higher-order analyses, 1st-SPPA focuses solely on individual point locations and their spread, without considering interactions between them. It helps identify where points are most concentrated, whether their distribution is uniform, and how widely they are dispersed. In this context, the chapter introduces hands-on techniques using the spatstat package to explore whether childcare centres in Singapore are randomly distributed, and if not, to pinpoint areas with higher concentrations.
+
+
+## 2. Data
+
+- Child Care Services data from data.gov.sg, a point feature data providing both location and attribute information of childcare centres.
+
+- Master Plan 2019 Subzone Boundary (No Sea), a polygon feature data providing information of URA 2019 Master Plan Planning Subzone boundary data.
+
+## 3. Installing and Loading R Packages
+
+```{r}
+pacman::p_load(sf, terra, spatstat, 
+               tmap, rvest, tidyverse)
+```
+
+## 4. Importing and Wrangling Geospatial Datasets
+
+Import the master plan subzone boundary
+
+```{r}
+mpsz_sf <- st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML (1).kml") %>% 
+  st_zm(drop = TRUE, what = "ZM") %>% st_transform(crs = 3414)
+```
+
+Extract the Key attributes and KML descriptions
+
+```{r}
+extract_kml_field <- function(html_text, field_name) {
+  if (is.na(html_text) || html_text == "") return(NA_character_)
+  page <- read_html(html_text)
+  rows <- page %>% html_elements("tr")
+  value <- rows %>%
+    keep(~ html_text2(html_element(.x, "th")) == field_name) %>%
+    html_element("td") %>%
+    html_text2()
+  if (length(value) == 0) NA_character_ else value
+}
+```
+
+Clean the structure and subzone data
+
+```{r}
+mpsz_sf <- mpsz_sf %>%
+  mutate(
+    REGION_N = map_chr(Description, extract_kml_field, "REGION_N"),
+    PLN_AREA_N = map_chr(Description, extract_kml_field, "PLN_AREA_N"),
+    SUBZONE_N = map_chr(Description, extract_kml_field, "SUBZONE_N"),
+    SUBZONE_C = map_chr(Description, extract_kml_field, "SUBZONE_C")
+  ) %>%
+  select(-Name, -Description) %>%
+  relocate(geometry, .after = last_col())
+```
+
+Filter out Non-Mainland subzones
+
+```{r}
+mpsz_cl <- mpsz_sf %>%
+  filter(SUBZONE_N != "SOUTHERN GROUP",
+         PLN_AREA_N != "WESTERN ISLANDS",
+         PLN_AREA_N != "NORTH-EASTERN ISLANDS")
+```
+
+Save the cleaned subzone
+
+```{r}
+write_rds(mpsz_cl, "data/mpsz_cl.rds")
+```
+
+Import the childcare services data
+
+```{r}
+childcare_sf <- st_read("data/ChildCareServices.kml") %>% 
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 3414)
+```
+
+Validate the CRS Match
+
+```{r}
+st_crs(mpsz_cl) == st_crs(childcare_sf)
+```
+
+### 4.1 Mapping Geospatial Datasets
+
+DIY 
+
+```{r}
+library(sf)
+library(ggplot2)
+library(readr)
+
+# Load cleaned subzone and childcare datasets
+mpsz_cl <- read_rds("data/mpsz_cl.rds")
+childcare_sf <- st_read("data/ChildCareServices.kml") %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = st_crs(mpsz_cl))  # Ensure same CRS
+
+# Create the map
+ggplot() +
+  geom_sf(data = mpsz_cl, fill = "gray", color = "black", size = 0.2) +
+  geom_sf(data = childcare_sf, color = "black", size = 1.2, alpha = 0.7) +
+  labs(title = "Childcare Services Across Singapore Subzones",
+       subtitle = "All layers aligned to EPSG:3414 (SVY21)",
+       caption = "Source: URA Master Plan & Data.gov.sg") +
+  theme_minimal()
+```
+
+Interactive mapping with tmap()
+
+```{r}
+tmap_mode("view")
+tm_shape(childcare_sf) +
+  tm_dots()
+```
+
+Switching back to plot
+
+```{r}
+tmap_mode("plot")
+```
+
+## 5. Geospatial Data Wrangling
+
+### 5.1 Converting sf data frames to ppp class
+
+spatstat requires the point event data in ppp object form. The code chunk below uses [as.ppp()] of spatstat package to convert childcare_sf to ppp format.
+
+```{r}
+childcare_ppp <- as.ppp(childcare_sf)
+```
+
+```{r}
+class(childcare_ppp)
+```
+
+```{r}
+summary(childcare_ppp)
+```
+
+### 5.2 Creating owin object
+
+it is a good practice to confine the analysis with a geographical area like Singapore boundary. In spatstat, an object called owin is specially designed to represent this polygonal region.
+
+The code chunk below, as.owin() of spatstat is used to covert mpsz_sf into owin object of spatstat.
+
+```{r}
+sg_owin <- as.owin(mpsz_cl)
+```
+
+```{r}
+class(sg_owin)
+```
+
+```{r}
+plot(sg_owin)
+```

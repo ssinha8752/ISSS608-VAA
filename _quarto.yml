@@ -14,7 +14,11 @@ website:
         - text: "Ex 1b - Choropleth Mapping"
           href: "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html"
         - text: "Hands-on Exercise 2"
-          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02.html"
+          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02a.html"
+        - text: "Ex 2a - 1st Order spatial point pattern analysis methods"
+          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02a.html"
+        - text: "Ex 2b - 2nd Order spatial point pattern analysis methods"
+          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02a.html"
     right:
       - href: index.qmd
         text: Home
