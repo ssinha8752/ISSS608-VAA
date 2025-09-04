@@ -85,10 +85,6 @@ childcare_sf <- st_read("data/ChildCareServices.kml") %>%
 st_crs(mpsz_cl) == st_crs(childcare_sf)
 ```
 
-
-
-DIY
-
 ```{r}
 library(sf)
 library(ggplot2)
@@ -136,10 +132,6 @@ class(childcare_ppp)
 summary(childcare_ppp)
 ```
 
-
-it is a good practice to confine the analysis with a geographical area like Singapore boundary. In spatstat, an object called owin is specially designed to represent this polygonal region.
-
-The code chunk below, as.owin() of spatstat is used to covert mpsz_sf into owin object of spatstat.
 
 ```{r}
 sg_owin <- as.owin(mpsz_cl)
@@ -227,7 +219,6 @@ plot(unmark(childcare_ck_ppp.km),
 plot(unmark(childcare_jw_ppp.km), 
   main="Jurong West")
 ```
-
 
 ## 5. Analysing Spatial Point Process Using G-Function
 The G function measures the distribution of the distances from an arbitrary event to its nearest event. In this section, you will learn how to compute G-function estimation by using Gest() of spatstat package. You will also learn how to perform monta carlo simulation test using envelope() of spatstat package
