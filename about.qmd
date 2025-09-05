@@ -2,6 +2,6 @@
 title: "About"
 ---
 
-About the site and course - \
+The website and course -\
 \
 Geospatial Analytics is the science of analyzing spatial data—data that has a geographic or locational component. It helps us understand patterns, relationships, and trends across physical space, enabling smarter decisions in urban planning, environmental monitoring, public health, and more. This lesson introduces the core concepts, data models, and visualization techniques that underpin geospatial analytics, with a strong emphasis on hands-on learning using R.
